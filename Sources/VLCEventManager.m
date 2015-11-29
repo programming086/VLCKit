@@ -155,6 +155,8 @@ static void * EventDispatcherMainLoop(void * user_data)
 
             /* Get the first object off the queue. */
             message = [_messageQueue lastObject];    // Released in 'call'
+            if (!message)
+                break;
             [_messageQueue removeLastObject];
 
             /* Remove duplicate notifications (keep the newest one). */
@@ -247,6 +249,7 @@ static void * EventDispatcherMainLoop(void * user_data)
         message.sel = aSelector;
         message.target = aTarget;
         message.object = arg;
+        message.name = @"";
         message.type = [arg isKindOfClass:[NSArray class]] ? VLCObjectMethodWithArrayArg : VLCObjectMethodWithObjectArg;
 
         pthread_mutex_lock(&_queueLock);
@@ -343,7 +346,8 @@ static void * EventDispatcherMainLoop(void * user_data)
     // Check that we were not cancelled
     if ([self markMessageHandledOnMainThreadIfExists:message]) {
         void (*method)(id, SEL, id) = (void (*)(id, SEL, id))[message.target methodForSelector: message.sel];
-        method(message.target, message.sel, message.object);
+        if (message.target && message.sel)
+            method(message.target, message.sel, message.object);
     }
 }
 

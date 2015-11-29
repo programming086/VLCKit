@@ -27,6 +27,7 @@
 				633BD6E30D2ADF030012A314 /* make */,
 			);
 			dependencies = (
+				7DD8283A1B32FA3F00929830 /* PBXTargetDependency */,
 			);
 			name = "Setup VLC contribs";
 			productName = "vlc-contrib";
@@ -39,6 +40,7 @@
 				63FFDBCD0D2AE2AE0092FC96 /* configure */,
 			);
 			dependencies = (
+				7DD8283C1B32FA4400929830 /* PBXTargetDependency */,
 			);
 			name = "Run VLC configure";
 			productName = "vlc-bootstrap";
@@ -152,6 +154,20 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		7DD828391B32FA3F00929830 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0867D690FE84028FC02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CC1EA79815938D7E00C40EF9;
+			remoteInfo = "Fetch libvlc";
+		};
+		7DD8283B1B32FA4400929830 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0867D690FE84028FC02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 633BD6E40D2ADF030012A314;
+			remoteInfo = "Setup VLC contribs";
+		};
 		CC1EA7A115938F2200C40EF9 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 0867D690FE84028FC02AAC07 /* Project object */;
@@ -646,7 +662,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "top_srcdir=`pwd`/vlc-unstable\n\nif test \"$ACTION\" = \"clean\"\nthen\n    exit 0\nfi\n\nif test \"$arch\" = \"x86_64\"; then\n    export PATH=$top_srcdir/contrib/x86_64-apple-darwin10/bin:$PATH\nfi\n\nexport PATH=$top_srcdir/extras/tools/build/bin:/usr/local/bin:$PATH\n\necho $PATH\n\nif ! [ -e $top_srcdir/configure ]; then\n  cd \"$top_srcdir\" && ./bootstrap\nfi";
+			shellScript = "top_srcdir=`pwd`/vlc-unstable\n\nif test \"$ACTION\" = \"clean\"\nthen\n    exit 0\nfi\n\nif test \"$arch\" = \"x86_64\"; then\n    export PATH=$top_srcdir/contrib/x86_64-apple-darwin11/bin:$PATH\nfi\n\nexport PATH=$top_srcdir/extras/tools/build/bin:/usr/local/bin:$PATH\n\necho $PATH\n\nif ! [ -e $top_srcdir/configure ]; then\n  cd \"$top_srcdir\" && ./bootstrap\nfi";
 			showEnvVarsInLog = 0;
 		};
 		6337548010ED091D0072A0D9 /* make */ = {
@@ -695,7 +711,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if test $ACTION = \"clean\"\nthen\nmake clean\nexit 0\nfi\n\necho \"Building tools\"\necho \"\"\ncd $SOURCE_ROOT/vlc-unstable/extras/tools\n./bootstrap\nmake\n\necho \"Building a set of contribs for $ARCHS...\"\necho \"\"\n\nexport PATH=$SOURCE_ROOT/vlc-unstable/extras/tools/build/bin:$PATH\n\nfor arch in $ARCHS; do\n\tcd $SOURCE_ROOT/vlc-unstable/contrib\n\techo \"Making contribs for $arch\"\n\trm -rf vlckit-$arch\t\n\tmkdir vlckit-$arch\n\tcd vlckit-$arch\n\tif test \"$arch\" = \"x86_64\"; then\n          export OSX_VERSION=10.7\nexport TRIPLET=x86_64-apple-darwin10\nelse\nexport TRIPLET=i686-apple-darwin9\nfi\n\trm -rf $TRIPLET\n\t../bootstrap --build=$TRIPLET --host=$TRIPLET\n\tmake prebuilt\ndone\n";
+			shellScript = "if test $ACTION = \"clean\"\nthen\nmake clean\nexit 0\nfi\n\necho \"Building tools\"\necho \"\"\ncd $SOURCE_ROOT/vlc-unstable/extras/tools\n./bootstrap\nmake\n\necho \"Building a set of contribs for $ARCHS...\"\necho \"\"\n\nexport PATH=$SOURCE_ROOT/vlc-unstable/extras/tools/build/bin:$PATH\n\nfor arch in $ARCHS; do\n\tcd $SOURCE_ROOT/vlc-unstable/contrib\n\techo \"Making contribs for $arch\"\n\trm -rf vlckit-$arch\t\n\tmkdir vlckit-$arch\n\tcd vlckit-$arch\n    export OSX_VERSION=10.7\n    export TRIPLET=x86_64-apple-darwin11\n\trm -rf $TRIPLET\n\t../bootstrap --build=$TRIPLET --host=$TRIPLET\n\tmake prebuilt\ndone\n";
 			showEnvVarsInLog = 0;
 		};
 		63FFDBCD0D2AE2AE0092FC96 /* configure */ = {
@@ -810,6 +826,16 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		7DD8283A1B32FA3F00929830 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CC1EA79815938D7E00C40EF9 /* Fetch libvlc */;
+			targetProxy = 7DD828391B32FA3F00929830 /* PBXContainerItemProxy */;
+		};
+		7DD8283C1B32FA4400929830 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 633BD6E40D2ADF030012A314 /* Setup VLC contribs */;
+			targetProxy = 7DD8283B1B32FA4400929830 /* PBXContainerItemProxy */;
+		};
 		CC1EA7A215938F2200C40EF9 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = CC1EA79815938D7E00C40EF9 /* Fetch libvlc */;

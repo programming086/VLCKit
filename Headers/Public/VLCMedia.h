@@ -2,12 +2,12 @@
  * VLCMedia.h: VLCKit.framework VLCMedia header
  *****************************************************************************
  * Copyright (C) 2007 Pierre d'Herbemont
- * Copyright (C) 2013 Felix Paul K√ºhne
+ * Copyright (C) 2013 Felix Paul Kühne
  * Copyright (C) 2007-2013 VLC authors and VideoLAN
  * $Id$
  *
  * Authors: Pierre d'Herbemont <pdherbemont # videolan.org>
- *          Felix Paul K√ºhne <fkuehne # videolan.org>
+ *          Felix Paul Kühne <fkuehne # videolan.org>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by
@@ -50,6 +50,14 @@ extern NSString *const VLCMetaInformationEncodedBy;      /* NSString */
 extern NSString *const VLCMetaInformationArtworkURL;     /* NSString */
 extern NSString *const VLCMetaInformationArtwork;        /* NSImage  */
 extern NSString *const VLCMetaInformationTrackID;        /* NSString */
+extern NSString *const VLCMetaInformationTrackTotal;     /* NSString */
+extern NSString *const VLCMetaInformationDirector;       /* NSString */
+extern NSString *const VLCMetaInformationSeason;         /* NSString */
+extern NSString *const VLCMetaInformationEpisode;        /* NSString */
+extern NSString *const VLCMetaInformationShowName;       /* NSString */
+extern NSString *const VLCMetaInformationActors;         /* NSString */
+extern NSString *const VLCMetaInformationAlbumArtist;    /* NSString */
+extern NSString *const VLCMetaInformationDiscNumber;     /* NSString */
 
 /* Notification Messages */
 /**
@@ -93,14 +101,6 @@ typedef NS_ENUM(NSInteger, VLCMediaState) {
 @optional
 
 /**
- * Delegate method called whenever the meta has changed for the receiver.
- * \param aMedia The media resource whose meta data has been changed.
- * \param oldValue The old meta data value.
- * \param key The key of the value that was changed.
- */
-- (void)media:(VLCMedia *)aMedia metaValueChangedFrom:(id)oldValue forKey:(NSString *)key __attribute__((deprecated));
-
-/**
  * Delegate method called whenever the media's meta data was changed for whatever reason
  * \note this is called more often than mediaDidFinishParsing, so it may be less efficient
  * \param aMedia The media resource whose meta data has been changed.
@@ -142,6 +142,14 @@ typedef NS_ENUM(NSInteger, VLCMediaState) {
 + (instancetype)mediaWithPath:(NSString *)aPath;
 
 /**
+ * convienience method to return a user-readable codec name for the given FourCC
+ * \param uint32_t the FourCC to process
+ * \param NSString a VLC track type if known to speed-up the name search
+ * \return a NSString containing the codec name if recognized, else an empty string
+ */
++ (NSString *)codecNameForFourCC:(uint32_t)fourcc trackType:(NSString *)trackType;
+
+/**
  * TODO
  * \param aName TODO
  * \return a new VLCMedia object, only if there were no errors.  This object
@@ -171,6 +179,21 @@ typedef NS_ENUM(NSInteger, VLCMediaState) {
  * \return A new VLCMedia object, only if there were no errors.
  */
 - (instancetype)initAsNodeWithName:(NSString *)aName;
+
+typedef NS_ENUM(NSUInteger, VLCMediaType) {
+    VLCMediaTypeUnknown,
+    VLCMediaTypeFile,
+    VLCMediaTypeDirectory,
+    VLCMediaTypeDisc,
+    VLCMediaTypeStream,
+    VLCMediaTypePlaylist,
+};
+
+/**
+ * media type
+ * \return returns the type of a media (VLCMediaType)
+ */
+@property (readonly) VLCMediaType mediaType;
 
 /**
  * Returns an NSComparisonResult value that indicates the lexical ordering of
@@ -402,6 +425,27 @@ extern NSString *const VLCMediaTracksInformationTypeUnknown;
  * the selector won't return until parsing finished
  */
 - (void)synchronousParse;
+
+
+enum {
+    VLCMediaParseLocal          = 0x00,
+    VLCMediaParseNetwork        = 0x01,
+    VLCMediaFetchLocal          = 0x02,
+    VLCMediaFetchNetwork        = 0x04,
+};
+typedef int VLCMediaParsingOptions;
+
+/**
+ * triggers an asynchronous parse of the media item
+ * using the given options
+ * \param the option mask based on VLCMediaParsingOptions
+ * \see VLCMediaParsingOptions
+ * \return an int. 0 on success, -1 in case of error
+ * \note listen to the "parsed" key value or the mediaDidFinishParsing:
+ * delegate method to be notified about parsing results. Those triggers
+ * will _NOT_ be raised if parsing fails and this method returns an error.
+ */
+- (int)parseWithOptions:(VLCMediaParsingOptions)options;
 
 /**
  * Add options to the media, that will be used to determine how

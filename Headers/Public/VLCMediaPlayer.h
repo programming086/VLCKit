@@ -2,8 +2,8 @@
  * VLCMediaPlayer.h: VLCKit.framework VLCMediaPlayer header
  *****************************************************************************
  * Copyright (C) 2007-2009 Pierre d'Herbemont
- * Copyright (C) 2007-2014 VLC authors and VideoLAN
- * Copyright (C) 2009-2014 Felix Paul Kühne
+ * Copyright (C) 2007-2015 VLC authors and VideoLAN
+ * Copyright (C) 2009-2015 Felix Paul Kühne
  * $Id$
  *
  * Authors: Pierre d'Herbemont <pdherbemont # videolan.org>
@@ -30,9 +30,10 @@
 #endif
 #import "VLCMedia.h"
 #import "VLCTime.h"
-#import "VLCAudio.h"
 
 #if !TARGET_OS_IPHONE
+#import "VLCAudio.h"
+
 @class VLCVideoView;
 @class VLCVideoLayer;
 #endif
@@ -210,7 +211,9 @@ extern NSString * VLCMediaPlayerStateToString(VLCMediaPlayerState state);
  */
 @property (nonatomic)  float rate;
 
+#if !TARGET_OS_IPHONE
 @property (nonatomic, readonly, weak) VLCAudio * audio;
+#endif
 
 /* Video Information */
 /**
@@ -249,25 +252,17 @@ extern NSString * VLCMediaPlayerStateToString(VLCMediaPlayerState state);
 
 @property (nonatomic, readonly, weak) VLCTime *remainingTime;
 
-/**
- * Frames per second
- * \note this property is deprecated. use (float)fps instead.
- * \return current media's frames per second value
- */
-@property (readonly) NSUInteger fps __attribute__((deprecated));
-
 #pragma mark -
 #pragma mark ES track handling
 
 /**
  * Return the current video track index
- * Note that the handled values do not match the videoTracks array indexes
- * but refer to videoSubTitlesIndexes.
+ *
  * \return 0 if none is set.
  *
  * Pass -1 to disable.
  */
-@property (readwrite) NSUInteger currentVideoTrackIndex;
+@property (readwrite) int currentVideoTrackIndex;
 
 /**
  * Returns the video track names, usually a language name or a description
@@ -282,21 +277,19 @@ extern NSString * VLCMediaPlayerStateToString(VLCMediaPlayerState state);
 @property (NS_NONATOMIC_IOSONLY, readonly, copy) NSArray *videoTrackIndexes;
 
 /**
- * Return the video tracks
- *
- * It includes the disabled fake track at index 0.
+ * returns the number of video tracks available in the current media
+ * \return number of tracks
  */
-- (NSArray *)videoTracks __attribute__((deprecated));
+@property (NS_NONATOMIC_IOSONLY, readonly) int numberOfVideoTracks;
 
 /**
  * Return the current video subtitle index
- * Note that the handled values do not match the videoSubTitles array indexes
- * but refer to videoSubTitlesIndexes
+ *
  * \return 0 if none is set.
  *
  * Pass -1 to disable.
  */
-@property (readwrite) NSUInteger currentVideoSubTitleIndex;
+@property (readwrite) int currentVideoSubTitleIndex;
 
 /**
  * Returns the video subtitle track names, usually a language name or a description
@@ -311,11 +304,10 @@ extern NSString * VLCMediaPlayerStateToString(VLCMediaPlayerState state);
 @property (NS_NONATOMIC_IOSONLY, readonly, copy) NSArray *videoSubTitlesIndexes;
 
 /**
- * Return the video subtitle tracks
- * \note this property is deprecated. use (NSArray *)videoSubtitleNames instead.
- * It includes the disabled fake track at index 0.
+ * returns the number of SPU tracks available in the current media
+ * \return number of tracks
  */
-- (NSArray *)videoSubTitles __attribute__((deprecated));
+@property (NS_NONATOMIC_IOSONLY, readonly) int numberOfSubtitlesTracks;
 
 /**
  * Load and set a specific video subtitle, from a file.
@@ -346,26 +338,59 @@ extern NSString * VLCMediaPlayerStateToString(VLCMediaPlayerState state);
 @property (readwrite) int currentChapterIndex;
 - (void)previousChapter;
 - (void)nextChapter;
-- (NSArray *)chaptersForTitleIndex:(int)titleIndex;
+- (int)numberOfChaptersForTitle:(int)titleIndex;
+- (NSArray *)chaptersForTitleIndex:(int)titleIndex __attribute__((deprecated));
+
+extern NSString *const VLCChapterDescriptionName;
+extern NSString *const VLCChapterDescriptionTimeOffset;
+extern NSString *const VLCChapterDescriptionDuration;
+
+/**
+ * chapter descriptions
+ * an array of all chapters of the given title including information about
+ * chapter name, time offset and duration
+ * \note if no title value is provided, information about the chapters of the current title is returned
+ * \return array describing the titles in details
+ */
+- (NSArray *)chapterDescriptionsOfTitle:(int)titleIndex;
 
 /**
  * Title selection and enumeration
  * \return NSNotFound if none is set.
  */
 @property (readwrite) int currentTitleIndex;
-@property (NS_NONATOMIC_IOSONLY, readonly, copy) NSArray *titles;
+@property (readonly) int numberOfTitles;
+@property (readonly) NSUInteger countOfTitles __attribute__((deprecated));
+@property (NS_NONATOMIC_IOSONLY, readonly, copy) NSArray *titles __attribute__((deprecated));
+
+extern NSString *const VLCTitleDescriptionName;
+extern NSString *const VLCTitleDescriptionDuration;
+extern NSString *const VLCTitleDescriptionIsMenu;
+
+/**
+ * title descriptions
+ * an array of all titles of the current media including information
+ * of name, duration and potential menu state
+ * \return array describing the titles in details
+ */
+@property (NS_NONATOMIC_IOSONLY, readonly, copy) NSArray *titleDescriptions;
+
+/**
+ * the title with the longest duration
+ * \return int matching the title index
+ */
+@property (readonly) int indexOfLongestTitle;
 
 /* Audio Options */
 
 /**
  * Return the current audio track index
- * Note that the handled values do not match the audioTracks array indexes
- * but refer to audioTrackIndexes.
+ *
  * \return 0 if none is set.
  *
  * Pass -1 to disable.
  */
-@property (readwrite) NSUInteger currentAudioTrackIndex;
+@property (readwrite) int currentAudioTrackIndex;
 
 /**
  * Returns the audio track names, usually a language name or a description
@@ -380,11 +405,10 @@ extern NSString * VLCMediaPlayerStateToString(VLCMediaPlayerState state);
 @property (NS_NONATOMIC_IOSONLY, readonly, copy) NSArray *audioTrackIndexes;
 
 /**
- * Return the audio tracks
- *
- * It includes the "Disable" fake track at index 0.
+ * returns the number of audio tracks available in the current media
+ * \return number of tracks
  */
-- (NSArray *)audioTracks __attribute__((deprecated));
+@property (NS_NONATOMIC_IOSONLY, readonly) int numberOfAudioTracks;
 
 #pragma mark -
 #pragma mark audio functionality

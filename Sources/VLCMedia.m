@@ -51,6 +51,14 @@ NSString *const VLCMetaInformationEncodedBy      = @"encodedBy";
 NSString *const VLCMetaInformationArtworkURL     = @"artworkURL";
 NSString *const VLCMetaInformationArtwork        = @"artwork";
 NSString *const VLCMetaInformationTrackID        = @"trackID";
+NSString *const VLCMetaInformationTrackTotal     = @"trackTotal";
+NSString *const VLCMetaInformationDirector       = @"director";
+NSString *const VLCMetaInformationSeason         = @"season";
+NSString *const VLCMetaInformationEpisode        = @"episode";
+NSString *const VLCMetaInformationShowName       = @"showName";
+NSString *const VLCMetaInformationActors         = @"actors";
+NSString *const VLCMetaInformationAlbumArtist    = @"AlbumArtist";
+NSString *const VLCMetaInformationDiscNumber     = @"discNumber";
 
 /* Notification Messages */
 NSString *const VLCMediaMetaChanged              = @"VLCMediaMetaChanged";
@@ -168,6 +176,24 @@ static void HandleMediaParsedChanged(const libvlc_event_t * event, void * self)
  */
 @implementation VLCMedia
 
++ (NSString *)codecNameForFourCC:(uint32_t)fourcc trackType:(NSString *)trackType
+{
+    libvlc_track_type_t track_type = libvlc_track_unknown;
+
+    if ([trackType isEqualToString:VLCMediaTracksInformationTypeAudio])
+        track_type = libvlc_track_audio;
+    else if ([trackType isEqualToString:VLCMediaTracksInformationTypeVideo])
+        track_type = libvlc_track_video;
+    else if ([trackType isEqualToString:VLCMediaTracksInformationTypeText])
+        track_type = libvlc_track_text;
+
+    const char *ret = libvlc_media_get_codec_description(track_type, fourcc);
+    if (ret)
+        return [NSString stringWithUTF8String:ret];
+
+    return @"";
+}
+
 + (instancetype)mediaWithURL:(NSURL *)anURL;
 {
     return [[VLCMedia alloc] initWithURL:anURL];
@@ -218,16 +244,38 @@ static void HandleMediaParsedChanged(const libvlc_event_t * event, void * self)
 - (void)dealloc
 {
     libvlc_event_manager_t * p_em = libvlc_media_event_manager(p_md);
-    libvlc_event_detach(p_em, libvlc_MediaMetaChanged,     HandleMediaMetaChanged,     (__bridge void *)(self));
-    libvlc_event_detach(p_em, libvlc_MediaDurationChanged, HandleMediaDurationChanged, (__bridge void *)(self));
-    libvlc_event_detach(p_em, libvlc_MediaStateChanged,    HandleMediaStateChanged,    (__bridge void *)(self));
-    libvlc_event_detach(p_em, libvlc_MediaSubItemAdded,    HandleMediaSubItemAdded,    (__bridge void *)(self));
-    libvlc_event_detach(p_em, libvlc_MediaParsedChanged,   HandleMediaParsedChanged,   (__bridge void *)(self));
+    if (p_em) {
+        libvlc_event_detach(p_em, libvlc_MediaMetaChanged,     HandleMediaMetaChanged,     (__bridge void *)(self));
+        libvlc_event_detach(p_em, libvlc_MediaDurationChanged, HandleMediaDurationChanged, (__bridge void *)(self));
+        libvlc_event_detach(p_em, libvlc_MediaStateChanged,    HandleMediaStateChanged,    (__bridge void *)(self));
+        libvlc_event_detach(p_em, libvlc_MediaSubItemAdded,    HandleMediaSubItemAdded,    (__bridge void *)(self));
+        libvlc_event_detach(p_em, libvlc_MediaParsedChanged,   HandleMediaParsedChanged,   (__bridge void *)(self));
+    }
 
     [[VLCEventManager sharedManager] cancelCallToObject:self];
 
     libvlc_media_release( p_md );
+}
 
+- (VLCMediaType)mediaType
+{
+    libvlc_media_type_t libmediatype = libvlc_media_get_type(p_md);
+
+    switch (libmediatype) {
+        case libvlc_media_type_file:
+            return VLCMediaTypeFile;
+        case libvlc_media_type_directory:
+            return VLCMediaTypeDirectory;
+        case libvlc_media_type_disc:
+            return VLCMediaTypeDisc;
+        case libvlc_media_type_stream:
+            return VLCMediaTypeStream;
+        case libvlc_media_type_playlist:
+            return VLCMediaTypePlaylist;
+
+        default:
+            return VLCMediaTypeUnknown;
+    }
 }
 
 - (NSString *)description
@@ -294,6 +342,15 @@ static void HandleMediaParsedChanged(const libvlc_event_t * event, void * self)
 {
     if (p_md)
         libvlc_media_parse(p_md);
+}
+
+- (int)parseWithOptions:(VLCMediaParsingOptions)options
+{
+    if (!p_md)
+        return -1;
+
+    return libvlc_media_parse_with_options(p_md,
+                                           options);
 }
 
 - (void)addOptions:(NSDictionary*)options
@@ -551,10 +608,10 @@ NSString *const VLCMediaTracksInformationTextEncoding = @"encoding"; // NSString
                                            VLCMediaTracksInformationBitrate,
                                            nil];
         if (tracksInfo[i]->psz_language)
-            dictionary[VLCMediaTracksInformationLanguage] = [NSString stringWithFormat:@"%s",tracksInfo[i]->psz_language];
+            dictionary[VLCMediaTracksInformationLanguage] = [NSString stringWithUTF8String:tracksInfo[i]->psz_language];
 
         if (tracksInfo[i]->psz_description)
-            dictionary[VLCMediaTracksInformationDescription] = [NSString stringWithFormat:@"%s",tracksInfo[i]->psz_description];
+            dictionary[VLCMediaTracksInformationDescription] = [NSString stringWithUTF8String:tracksInfo[i]->psz_description];
 
         NSString *type;
         switch (tracksInfo[i]->i_type) {
@@ -575,7 +632,7 @@ NSString *const VLCMediaTracksInformationTextEncoding = @"encoding"; // NSString
             case libvlc_track_text:
                 type = VLCMediaTracksInformationTypeText;
                 if (tracksInfo[i]->subtitle->psz_encoding)
-                    dictionary[VLCMediaTracksInformationTextEncoding] = [NSString stringWithFormat:@"%s", tracksInfo[i]->subtitle->psz_encoding];
+                    dictionary[VLCMediaTracksInformationTextEncoding] = [NSString stringWithUTF8String: tracksInfo[i]->subtitle->psz_encoding];
                 break;
             case libvlc_track_unknown:
             default:
@@ -705,6 +762,14 @@ NSString *const VLCMediaTracksInformationTextEncoding = @"encoding"; // NSString
                 VLCStringToMeta(Publisher),
                 VLCStringToMeta(ArtworkURL),
                 VLCStringToMeta(TrackID),
+                VLCStringToMeta(TrackTotal),
+                VLCStringToMeta(Director),
+                VLCStringToMeta(Season),
+                VLCStringToMeta(Episode),
+                VLCStringToMeta(ShowName),
+                VLCStringToMeta(Actors),
+                VLCStringToMeta(AlbumArtist),
+                VLCStringToMeta(DiscNumber),
                 nil];
 #undef VLCStringToMeta
     }
@@ -731,6 +796,14 @@ NSString *const VLCMediaTracksInformationTextEncoding = @"encoding"; // NSString
     VLCMetaToString(Publisher, type);
     VLCMetaToString(ArtworkURL, type);
     VLCMetaToString(TrackID, type);
+    VLCMetaToString(TrackTotal, type);
+    VLCMetaToString(Director, type);
+    VLCMetaToString(Season, type);
+    VLCMetaToString(Episode, type);
+    VLCMetaToString(ShowName, type);
+    VLCMetaToString(Actors, type);
+    VLCMetaToString(AlbumArtist, type);
+    VLCMetaToString(DiscNumber, type);
 #undef VLCMetaToString
     return nil;
 }
@@ -749,11 +822,13 @@ NSString *const VLCMediaTracksInformationTextEncoding = @"encoding"; // NSString
     libvlc_media_set_user_data(p_md, (__bridge void*)self);
 
     libvlc_event_manager_t * p_em = libvlc_media_event_manager( p_md );
-    libvlc_event_attach(p_em, libvlc_MediaMetaChanged,     HandleMediaMetaChanged,     (__bridge void *)(self));
-    libvlc_event_attach(p_em, libvlc_MediaDurationChanged, HandleMediaDurationChanged, (__bridge void *)(self));
-    libvlc_event_attach(p_em, libvlc_MediaStateChanged,    HandleMediaStateChanged,    (__bridge void *)(self));
-    libvlc_event_attach(p_em, libvlc_MediaSubItemAdded,    HandleMediaSubItemAdded,    (__bridge void *)(self));
-    libvlc_event_attach(p_em, libvlc_MediaParsedChanged,   HandleMediaParsedChanged,   (__bridge void *)(self));
+    if (p_em) {
+        libvlc_event_attach(p_em, libvlc_MediaMetaChanged,     HandleMediaMetaChanged,     (__bridge void *)(self));
+        libvlc_event_attach(p_em, libvlc_MediaDurationChanged, HandleMediaDurationChanged, (__bridge void *)(self));
+        libvlc_event_attach(p_em, libvlc_MediaStateChanged,    HandleMediaStateChanged,    (__bridge void *)(self));
+        libvlc_event_attach(p_em, libvlc_MediaSubItemAdded,    HandleMediaSubItemAdded,    (__bridge void *)(self));
+        libvlc_event_attach(p_em, libvlc_MediaParsedChanged,   HandleMediaParsedChanged,   (__bridge void *)(self));
+    }
 
     libvlc_media_list_t * p_mlist = libvlc_media_subitems( p_md );
 
@@ -872,7 +947,9 @@ NSString *const VLCMediaTracksInformationTextEncoding = @"encoding"; // NSString
         [self fetchMetaInformationFromLibVLCWithType: VLCMetaInformationDate];
         [self fetchMetaInformationFromLibVLCWithType: VLCMetaInformationGenre];
         [self fetchMetaInformationFromLibVLCWithType: VLCMetaInformationTrackNumber];
+        [self fetchMetaInformationFromLibVLCWithType: VLCMetaInformationDiscNumber];
         [self fetchMetaInformationFromLibVLCWithType: VLCMetaInformationNowPlaying];
+        [self fetchMetaInformationFromLibVLCWithType: VLCMetaInformationLanguage];
     }
     if (!isArtURLFetched) {
         isArtURLFetched = YES;
